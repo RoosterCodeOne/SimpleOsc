@@ -1,0 +1,26 @@
+# === Build Artifacts ===
+Build/
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.exe
+*.app
+*.dSYM/
+
+# === Xcode and Projucer files ===
+*.xcworkspace/
+*.xcuserdata/
+*.xcuserstate
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/
+*.jucer
+
+# === JUCE Modules (don't commit JUCE source!) ===
+JUCE/
+modules/
+
+# === OS and Editor Junk ===
+.DS_Store
+*.swp

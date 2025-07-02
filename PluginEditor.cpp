@@ -3,14 +3,19 @@
 #include "CustomSliderLookAndFeel.h"
 #include "FreeMode.h"
 #include "DebugUtils.h"
+#include <random>
 
 CenteredSliderLookAndFeel centeredLook;
 
 PluginEditor::PluginEditor (SimpleOscAudioProcessor& p)
-    : AudioProcessorEditor (&p), processor (p)
+    : juce::AudioProcessorEditor (&p), processor (p)  // FIXED: Added juce:: prefix
 {
     addMouseListener(this, true);
 
+    randomEngine.seed(std::random_device{}());
+    initializeBackgroundParticles();
+    startTimer(16);
+    
     freqSlider.setSliderStyle(juce::Slider::LinearVertical);
     freqSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 60, 20);
     freqSlider.setSnapMode(false); // starts disabled
@@ -192,6 +197,7 @@ PluginEditor::PluginEditor (SimpleOscAudioProcessor& p)
 }
 
 PluginEditor::~PluginEditor() {
+    stopTimer();
     settingsWindow = nullptr;
     processor.parameters.removeParameterListener("snapOn", this);
     processor.parameters.removeParameterListener("binauralOffset", this);
@@ -220,25 +226,183 @@ void PluginEditor::applySnapPreset(const juce::String& name) {
     }
 }
 
+void PluginEditor::timerCallback()
+{
+    backgroundTime += 0.016f;
+    
+    // Very slow gradient rotation
+    gradientRotation += 0.2f; // Degrees per frame
+    if (gradientRotation > 360.0f)
+        gradientRotation -= 360.0f;
+    
+    updateBackgroundParticles();
+    repaint(); // Repaint the whole component
+}
 
+void PluginEditor::initializeBackgroundParticles()
+{
+    particles.clear();
+    particles.reserve(25); // Keep particle count low for subtlety
+    
+    for (int i = 0; i < 25; ++i)
+    {
+        createNewParticle();
+    }
+}
+
+void PluginEditor::createNewParticle()
+{
+    Particle p;
+    
+    // Random position
+    std::uniform_real_distribution<float> positionDist(0.0f, 1.0f);
+    p.x = positionDist(randomEngine);
+    p.y = positionDist(randomEngine);
+    
+    // Very slow, gentle movement
+    std::uniform_real_distribution<float> velocityDist(-0.0003f, 0.0003f);
+    p.vx = velocityDist(randomEngine);
+    p.vy = velocityDist(randomEngine);
+    
+    // Varied sizes, but generally small
+    std::uniform_real_distribution<float> sizeDist(2.0f, 8.0f);
+    p.size = sizeDist(randomEngine);
+    
+    // Long life for stability
+    std::uniform_real_distribution<float> lifeDist(15.0f, 25.0f);
+    p.maxLife = lifeDist(randomEngine);
+    p.life = p.maxLife;
+    
+    // Random color from palette
+    std::uniform_int_distribution<int> colorDist(0, meditativeColors.size() - 1);
+    p.color = meditativeColors[colorDist(randomEngine)];
+    
+    // Start with random alpha
+    std::uniform_real_distribution<float> alphaDist(0.1f, 0.4f);
+    p.alpha = alphaDist(randomEngine);
+    
+    particles.push_back(p);
+}
+
+void PluginEditor::updateBackgroundParticles()
+{
+    for (auto& particle : particles)
+    {
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        
+        // Wrap around edges smoothly
+        if (particle.x < -0.1f) particle.x = 1.1f;
+        if (particle.x > 1.1f) particle.x = -0.1f;
+        if (particle.y < -0.1f) particle.y = 1.1f;
+        if (particle.y > 1.1f) particle.y = -0.1f;
+        
+        // Update life
+        particle.life -= 0.016f; // Decrease based on ~60fps
+        
+        // Fade out as life decreases
+        float lifeRatio = particle.life / particle.maxLife;
+        particle.alpha = lifeRatio * 0.4f; // Max alpha of 0.4 for subtlety
+        
+        // Recreate particle if it dies
+        if (particle.life <= 0)
+        {
+            // Reset this particle
+            std::uniform_real_distribution<float> positionDist(0.0f, 1.0f);
+            particle.x = positionDist(randomEngine);
+            particle.y = positionDist(randomEngine);
+            
+            std::uniform_real_distribution<float> velocityDist(-0.0003f, 0.0003f);
+            particle.vx = velocityDist(randomEngine);
+            particle.vy = velocityDist(randomEngine);
+            
+            std::uniform_real_distribution<float> lifeDist(15.0f, 25.0f);
+            particle.maxLife = lifeDist(randomEngine);
+            particle.life = particle.maxLife;
+            
+            std::uniform_int_distribution<int> colorDist(0, meditativeColors.size() - 1);
+            particle.color = meditativeColors[colorDist(randomEngine)];
+        }
+    }
+}
+
+void PluginEditor::paintMeditativeBackground(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    auto size = juce::jmin(bounds.getWidth(), bounds.getHeight());
+    auto centerX = bounds.getWidth() * 0.5f;
+    auto centerY = bounds.getHeight() * 0.5f;
+    
+    // Create centered square area for 1:1 aspect ratio
+    juce::Rectangle<float> square(centerX - size * 0.5f, centerY - size * 0.5f, size, size);
+    
+    // 1. BASE: Background gradient that changes color (this should be most visible)
+    float colorShift = std::sin(backgroundTime * 0.3f) * 0.2f + 1.0f; // Made faster and more intense
+    juce::Colour color1 = juce::Colour(0xff1a1a2e).withMultipliedBrightness(colorShift);
+    juce::Colour color2 = juce::Colour(0xff16213e).withMultipliedBrightness(colorShift * 0.8f);
+    
+    juce::ColourGradient backgroundGradient = juce::ColourGradient::vertical(color1, color2, square);
+    g.setGradientFill(backgroundGradient);
+    g.fillRect(square);
+    
+    // 2. OVERLAY: Subtle rotating gradient (REDUCED alpha so base shows through better)
+    juce::ColourGradient overlay = juce::ColourGradient(
+        juce::Colour(0xff2d1b69).withAlpha(0.15f), // Was 0.3f - now much lighter
+        centerX - std::cos(juce::degreesToRadians(gradientRotation)) * size * 0.7f,
+        centerY - std::sin(juce::degreesToRadians(gradientRotation)) * size * 0.7f,
+        juce::Colour(0xff44318d).withAlpha(0.05f), // Was 0.1f - now much lighter
+        centerX + std::cos(juce::degreesToRadians(gradientRotation)) * size * 0.7f,
+        centerY + std::sin(juce::degreesToRadians(gradientRotation)) * size * 0.7f,
+        false
+    );
+    
+    g.setGradientFill(overlay);
+    g.fillRect(square);
+    
+    // Draw particles (unchanged)
+    for (const auto& particle : particles)
+    {
+        if (particle.alpha > 0.01f)
+        {
+            float x = square.getX() + particle.x * square.getWidth();
+            float y = square.getY() + particle.y * square.getHeight();
+            
+            juce::Colour particleColor = particle.color.withAlpha(particle.alpha);
+            
+            for (int i = 3; i >= 1; --i)
+            {
+                float glowSize = particle.size * i * 0.8f;
+                float glowAlpha = particle.alpha * (0.3f / i);
+                g.setColour(particleColor.withAlpha(glowAlpha));
+                g.fillEllipse(x - glowSize * 0.5f, y - glowSize * 0.5f, glowSize, glowSize);
+            }
+            
+            g.setColour(particleColor);
+            g.fillEllipse(x - particle.size * 0.5f, y - particle.size * 0.5f,
+                         particle.size, particle.size);
+        }
+    }
+    
+    // 3. BREATHING: Very subtle breathing effect (REDUCED alpha)
+    float breathe = (std::sin(backgroundTime * 0.1f) + 1.0f) * 0.5f;
+    juce::Colour breatheColor = juce::Colour(0xff3c6e71).withAlpha(breathe * 0.03f); // Was 0.05f - now lighter
+    
+    juce::ColourGradient breatheGradient(
+        breatheColor,
+        centerX, centerY,
+        juce::Colour(0xff3c6e71).withAlpha(0.0f),
+        centerX + size * 0.4f, centerY + size * 0.4f,
+        true
+    );
+    
+    g.setGradientFill(breatheGradient);
+    g.fillRect(square);
+}
 
 void PluginEditor::paint (juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::black);
-
-    auto windowBounds = getLocalBounds().toFloat();
-    auto decorativeSize = windowBounds.getWidth() * 0.95f;
-    auto decorativeArea = juce::Rectangle<float>(
-        windowBounds.getCentreX() - decorativeSize / 2,
-        windowBounds.getCentreY() - decorativeSize / 2,
-        decorativeSize,
-        decorativeSize
-    );
-
-    // Placeholder for future enhancements (color/image/scaling)
-    g.setColour(juce::Colour::fromString("ffbbbbbb")); // #bbbbbb
-    g.fillRoundedRectangle(decorativeArea, 16.0f);
-    // Future: if (useImageBackground) g.drawImage(...);
+    paintMeditativeBackground(g);
     
     juce::DropShadow shadow(juce::Colours::black.withAlpha(0.5f), 8, {2, 2});
     shadow.drawForRectangle(g, carvedArea);

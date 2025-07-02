@@ -4,13 +4,13 @@
 #include "PluginProcessor.h"
 #include "ModifierSlot.h"
 #include "SettingsWindow.h"
-
-#include <fstream>
 #include "FreeSlider.h"
-
+#include <random>    // Add this for std::mt19937
+#include <fstream>
 
 class PluginEditor  : public juce::AudioProcessorEditor,
-                     private juce::AudioProcessorValueTreeState::Listener
+                      private juce::AudioProcessorValueTreeState::Listener,
+                      private juce::Timer
 {
 public:
     PluginEditor (SimpleOscAudioProcessor&);
@@ -22,6 +22,8 @@ public:
     void parameterChanged(const juce::String& paramID, float newValue) override;
     void setFrequencyRange(double min, double max);
     void applySnapPreset(const juce::String& name);
+    void timerCallback() override;
+
 
 private:
     SimpleOscAudioProcessor& processor;
@@ -67,8 +69,39 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> breathDepthAttachment;
     
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> harmonicToggleAttachments;
+    
+    struct Particle
+    {
+        float x, y;           // Position
+        float vx, vy;         // Velocity
+        float size;           // Size
+        float alpha;          // Transparency
+        float life;           // Life remaining (0-1)
+        float maxLife;        // Maximum life
+        juce::Colour color;   // Particle color
+    };
 
-
+    std::vector<Particle> particles;
+    std::mt19937 randomEngine;
+    float gradientRotation = 0.0f;
+    float backgroundTime = 0.0f;
+    
+    // Meditative color palette
+    std::vector<juce::Colour> meditativeColors = {
+        juce::Colour(0xff2d1b69), // Deep purple
+        juce::Colour(0xff44318d), // Medium purple
+        juce::Colour(0xff5e3c99), // Light purple
+        juce::Colour(0xff3c6e71), // Teal
+        juce::Colour(0xff284b63), // Deep blue
+        juce::Colour(0xff353535), // Charcoal
+        juce::Colour(0xff1e3a5f)  // Navy
+    };
+    
+    // Background animation methods
+    void initializeBackgroundParticles();
+    void updateBackgroundParticles();
+    void paintMeditativeBackground(juce::Graphics& g);
+    void createNewParticle();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };

@@ -67,9 +67,9 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> binauralWidthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> breathRateAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> breathDepthAttachment;
-    
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> harmonicToggleAttachments;
-    
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> atmoLevelAttachment;
+
     struct Particle
     {
         float x, y;           // Position

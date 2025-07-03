@@ -58,6 +58,9 @@ void FreeMode::processBlock(juce::AudioBuffer<float>& buffer,
             buffer.setSample(1, sample, mid + sideR);
         }
 
+        // === Apply Breath (LFO) Gain Modulation AFTER Oscillator ===
+        processor->modifierEngine.process(buffer);
+        
         // Apply harmonics centered
         juce::AudioBuffer<float> harmonicBuffer;
         harmonicBuffer.setSize(numChannels, numSamples);

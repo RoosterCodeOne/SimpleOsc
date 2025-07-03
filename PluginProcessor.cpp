@@ -19,8 +19,12 @@ SimpleOscAudioProcessor::SimpleOscAudioProcessor()
         parameters.addParameterListener(id, this);
     }
     parameters.addParameterListener("harmonicLevel", this);
-
+    parameters.addParameterListener("atmoType", this);
+    parameters.addParameterListener("atmoLevel", this);
+    
     switchMode(0);
+    
+    
 }
 
 SimpleOscAudioProcessor::~SimpleOscAudioProcessor()
@@ -62,7 +66,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleOscAudioProcessor::cre
         juce::String id = "harmonic" + juce::String(i);
         params.push_back(std::make_unique<juce::AudioParameterBool>(id, id, false));
     }
-
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "atmoType", "Atmosphere Type",
+        juce::NormalisableRange<float>(0.0f, 7.0f, 1.0f), 0.0f));  // 0=Off, 1=White, etc.
+    
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "atmoLevel", "Atmosphere Level",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.25f));
+    
     return { params.begin(), params.end() };
 }
 

@@ -76,6 +76,9 @@ PluginEditor::PluginEditor (SimpleOscAudioProcessor& p)
         bool isOn = slot1->breathToggle->getToggleState();
         processor.modifierEngine.setModifierEnabled(1, isOn);
     };
+    auto* slot3 = modifierSlots[3].get();
+    atmoLevelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        processor.parameters, "atmoLevel", *slot3->atmoLevelSlider);
 
 
     

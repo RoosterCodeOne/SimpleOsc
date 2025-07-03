@@ -135,23 +135,62 @@ ModifierSlot::ModifierSlot(int index, SimpleOscAudioProcessor& proc)
     }
     // === Slot 3: Atmosphere ===
     if (slotIndex == 3) {
-        atmoToggle = std::make_unique<juce::ToggleButton>("Atmosphere");
-        atmoToggle->setToggleState(true, juce::dontSendNotification);
-        addAndMakeVisible(*atmoToggle);
-        
-        atmoSelector = std::make_unique<juce::TextButton>("White Noise");
+        // Remove the atmoToggle - selector will handle on/off
+            
+        atmoSelector = std::make_unique<juce::TextButton>("Off");  // Start with "Off"
         atmoSelector->onClick = [this]() {
             juce::PopupMenu menu;
-            menu.addItem(1, "White Noise");
-            menu.addItem(2, "Pink Noise");
-            menu.addItem(3, "Wind");
-            menu.addItem(4, "Birds");
+            menu.addItem(1, "Off");
+            menu.addItem(2, "White Noise");
+            menu.addItem(3, "Pink Noise");
+            menu.addItem(4, "Wind");
+            menu.addItem(5, "Rain");
+            menu.addItem(6, "Ocean");
+            menu.addItem(7, "Forest");
+            menu.addItem(8, "Birds");
+            
             menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(atmoSelector.get()),
                 [this](int result) {
-                    if (result == 1) atmoSelector->setButtonText("White Noise");
-                    else if (result == 2) atmoSelector->setButtonText("Pink Noise");
-                    else if (result == 3) atmoSelector->setButtonText("Wind");
-                    else if (result == 4) atmoSelector->setButtonText("Birds");
+                    if (result == 1) {
+                        atmoSelector->setButtonText("Off");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(0.0f);
+                        processor.modifierEngine.setModifierEnabled(3, false);
+                    }
+                    else if (result == 2) {
+                        atmoSelector->setButtonText("White Noise");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(1.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
+                    else if (result == 3) {
+                        atmoSelector->setButtonText("Pink Noise");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(2.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
+                    else if (result == 4) {
+                        atmoSelector->setButtonText("Wind");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(3.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
+                    else if (result == 5) {
+                        atmoSelector->setButtonText("Rain");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(4.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
+                    else if (result == 6) {
+                        atmoSelector->setButtonText("Ocean");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(5.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
+                    else if (result == 7) {
+                        atmoSelector->setButtonText("Forest");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(6.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
+                    else if (result == 8) {
+                        atmoSelector->setButtonText("Birds");
+                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(7.0f);
+                        processor.modifierEngine.setModifierEnabled(3, true);
+                    }
                 });
         };
         addAndMakeVisible(*atmoSelector);
@@ -160,7 +199,8 @@ ModifierSlot::ModifierSlot(int index, SimpleOscAudioProcessor& proc)
         atmoLevelSlider->setSliderStyle(juce::Slider::LinearVertical);
         atmoLevelSlider->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         atmoLevelSlider->setRange(0.0, 1.0, 0.01);
-        atmoLevelSlider->setValue(0.3);
+        atmoLevelSlider->setValue(0.25);  // Start at -12dB equivalent
+        atmoLevelSlider->setTooltip("Atmosphere volume: -inf to 0dB");
         addAndMakeVisible(*atmoLevelSlider);
     }
 }
@@ -306,11 +346,11 @@ void ModifierSlot::resized() {
         }
     }
 
-    else if (slotIndex == 3 && atmoSelector && atmoLevelSlider && atmoToggle) {
-        atmoToggle->setBounds(area.removeFromTop(20));
-
+    else if (slotIndex == 3 && atmoSelector && atmoLevelSlider) {
+        // No toggle anymore, just selector and slider
         int selectorHeight = 28;
         atmoSelector->setBounds(area.removeFromTop(selectorHeight));
+        area.removeFromTop(6); // Small gap
         atmoLevelSlider->setBounds(area);
     }
 }

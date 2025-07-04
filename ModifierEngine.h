@@ -225,6 +225,7 @@ public:
     void parameterChanged(const juce::String& paramID, float newValue) override {
         if (paramID == "atmoType") {
             currentType = static_cast<AtmosphereType>(static_cast<int>(newValue));
+            DBG("Atmosphere type changed to: " << static_cast<int>(currentType));
         } else if (paramID == "atmoLevel") {
             // Convert from 0.0-1.0 to -inf to 0.0 dB
             if (newValue <= 0.0001f) {
@@ -232,6 +233,7 @@ public:
             } else {
                 gainDb = 20.0f * std::log10(newValue); // Convert to dB
             }
+            DBG("Atmosphere level changed to: " << gainDb << " dB");
         }
     }
 
@@ -303,76 +305,80 @@ private:
     float generateWind() {
         float noise = generateWhiteNoise();
         
-        // Simple two-pole lowpass for wind character
-        float cutoff = 0.02f; // Very low cutoff for wind rumble
+        // Much gentler wind - lower frequency rumble
+        float cutoff = 0.005f; // Even lower cutoff for deeper rumble
         windFilterState1 += cutoff * (noise - windFilterState1);
         windFilterState2 += cutoff * (windFilterState1 - windFilterState2);
         
-        return windFilterState2 * 2.0f; // Boost filtered result
+        // Add some very gentle mid-frequency content
+        static float windMid = 0.0f;
+        windMid += 0.02f * (noise - windMid);
+        
+        return (windFilterState2 * 1.5f + windMid * 0.3f) * 0.4f; // Much quieter
     }
     
     float generateRain() {
         float noise = generateWhiteNoise();
         
-        // Simple highpass for rain texture
+        // Gentler rain - less harsh filtering
         float highpass = noise - rainFilterState;
-        rainFilterState += 0.1f * (noise - rainFilterState);
+        rainFilterState += 0.03f * (noise - rainFilterState); // Gentler filter
         
-        // Occasional droplet spikes
-        if (random.nextFloat() < 0.001f) {
-            highpass += (random.nextFloat() * 2.0f - 1.0f) * 0.3f;
+        // Much less frequent droplet spikes
+        if (random.nextFloat() < 0.0003f) { // Way less frequent
+            highpass += (random.nextFloat() * 2.0f - 1.0f) * 0.15f; // Quieter spikes
         }
         
-        return highpass * 0.4f;
+        return highpass * 0.2f; // Much quieter overall
     }
     
     float generateOcean() {
-        // Multiple slow sine waves for wave motion
+        // Much gentler ocean waves
         float waves = 0.0f;
         
         for (int i = 0; i < 3; ++i) {
-            waves += std::sin(oceanPhases[i]) * (0.3f - i * 0.1f); // Decreasing amplitude
+            waves += std::sin(oceanPhases[i]) * (0.15f - i * 0.05f); // Quieter waves
             oceanPhases[i] += 2.0f * juce::MathConstants<float>::pi * oceanFreqs[i] / static_cast<float>(sampleRate);
             if (oceanPhases[i] > 2.0f * juce::MathConstants<float>::pi) {
                 oceanPhases[i] -= 2.0f * juce::MathConstants<float>::pi;
             }
         }
         
-        // Add some noise for water texture
-        float noise = generateWhiteNoise() * 0.1f;
+        // Very gentle background noise
+        float noise = generateWhiteNoise() * 0.03f;
         
-        return waves + noise;
+        return (waves + noise) * 0.6f; // Much gentler overall
     }
     
     float generateForest() {
-        // Gentle filtered noise for forest ambience
-        float noise = generateWhiteNoise();
+        // Much gentler forest - like distant rustling
+        float noise = generateWhiteNoise() * 0.5f; // Start with quieter noise
         
-        // Simple bandpass effect (combination of high and low pass)
+        // Very gentle filtering
         static float forestLow = 0.0f;
         static float forestHigh = 0.0f;
         
-        forestLow += 0.05f * (noise - forestLow);
+        forestLow += 0.02f * (noise - forestLow); // Gentler filtering
         forestHigh = noise - forestLow;
         
-        return (forestLow * 0.3f + forestHigh * 0.2f) * 0.5f;
+        return (forestLow * 0.6f + forestHigh * 0.1f) * 0.3f; // Much quieter
     }
     
     float generateBirds() {
-        // For now, just filtered noise with occasional chirps
-        float noise = generateWhiteNoise();
+        // Much gentler birds - like distant chirping
+        float noise = generateWhiteNoise() * 0.3f; // Start quieter
         
-        // Simple highpass for chirpy character
+        // Gentler filtering
         static float birdsLow = 0.0f;
-        birdsLow += 0.3f * (noise - birdsLow);
+        birdsLow += 0.1f * (noise - birdsLow); // Less aggressive filtering
         float chirpy = noise - birdsLow;
         
-        // Occasional "chirp" bursts
-        if (random.nextFloat() < 0.002f) {
-            chirpy += (random.nextFloat() * 2.0f - 1.0f) * 0.4f;
+        // Much less frequent and gentler chirps
+        if (random.nextFloat() < 0.0005f) { // Much less frequent
+            chirpy += (random.nextFloat() * 2.0f - 1.0f) * 0.2f; // Gentler chirps
         }
         
-        return chirpy * 0.3f;
+        return chirpy * 0.15f; // Much quieter overall
     }
 };
 

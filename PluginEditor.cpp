@@ -16,6 +16,9 @@ PluginEditor::PluginEditor (SimpleOscAudioProcessor& p)
     initializeBackgroundParticles();
     startTimer(16);
     
+    carvedBackground = juce::ImageCache::getFromMemory(BinaryData::CarvedArea_BG_png, BinaryData::CarvedArea_BG_pngSize);
+
+    
     freqSlider.setSliderStyle(juce::Slider::LinearVertical);
     freqSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 60, 20);
     freqSlider.setSnapMode(false); // starts disabled
@@ -406,20 +409,37 @@ void PluginEditor::paintMeditativeBackground(juce::Graphics& g)
 void PluginEditor::paint (juce::Graphics& g)
 {
     paintMeditativeBackground(g);
-    
+    //Drop Shadow
     juce::DropShadow shadow(juce::Colours::black.withAlpha(0.5f), 8, {2, 2});
     shadow.drawForRectangle(g, carvedArea);
-    juce::Colour topLeft = juce::Colour::fromString("ff6a6a6a");   // slightly lighter gray
-    juce::Colour bottomRight = juce::Colour::fromString("ff3f3f3f"); // slightly darker gray
+    
+    
+    if (carvedBackground.isValid())
+    {
 
-    juce::ColourGradient diagGrad(
-        topLeft, carvedArea.getX(), carvedArea.getY(),
-        bottomRight, carvedArea.getRight(), carvedArea.getBottom(),
-        false
-    );
+        g.setOpacity(0.7f); // png transparency
+        g.drawImageWithin(carvedBackground,
+                          carvedArea.getX(), carvedArea.getY(),
+                          carvedArea.getWidth(), carvedArea.getHeight(),
+                          juce::RectanglePlacement::fillDestination,
+                          false);
+        g.setOpacity(1.0f);
+    }
+    else
+    {
 
-    g.setGradientFill(diagGrad);
-    g.fillRoundedRectangle(carvedArea.toFloat(), 8.0f);
+        // Fallback
+        juce::Colour topLeft = juce::Colour::fromString("ff6a6a6a");
+        juce::Colour bottomRight = juce::Colour::fromString("ff3f3f3f");
+        juce::ColourGradient diagGrad(
+            topLeft, carvedArea.getX(), carvedArea.getY(),
+            bottomRight, carvedArea.getRight(), carvedArea.getBottom(),
+            false
+        );
+        g.setGradientFill(diagGrad);
+        g.fillRoundedRectangle(carvedArea.toFloat(), 8.0f);
+    }
+
 
     auto blockColor = juce::Colours::black.withAlpha(0.3f);
     auto outlineColor = juce::Colour::fromString("ff757575");

@@ -153,42 +153,51 @@ ModifierSlot::ModifierSlot(int index, SimpleOscAudioProcessor& proc)
                 [this](int result) {
                     if (result == 1) {
                         atmoSelector->setButtonText("Off");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(0.0f);
+                        // Use convertTo0to1 for proper parameter conversion
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(0.0f));
                         processor.modifierEngine.setModifierEnabled(3, false);
                     }
                     else if (result == 2) {
                         atmoSelector->setButtonText("White Noise");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(1.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(1.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                     else if (result == 3) {
                         atmoSelector->setButtonText("Pink Noise");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(2.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(2.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                     else if (result == 4) {
                         atmoSelector->setButtonText("Wind");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(3.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(3.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                     else if (result == 5) {
                         atmoSelector->setButtonText("Rain");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(4.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(4.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                     else if (result == 6) {
                         atmoSelector->setButtonText("Ocean");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(5.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(5.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                     else if (result == 7) {
                         atmoSelector->setButtonText("Forest");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(6.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(6.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                     else if (result == 8) {
                         atmoSelector->setButtonText("Birds");
-                        processor.parameters.getParameter("atmoType")->setValueNotifyingHost(7.0f);
+                        auto* param = processor.parameters.getParameter("atmoType");
+                        param->setValueNotifyingHost(param->convertTo0to1(7.0f));
                         processor.modifierEngine.setModifierEnabled(3, true);
                     }
                 });

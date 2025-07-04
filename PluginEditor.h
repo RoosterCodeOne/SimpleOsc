@@ -27,6 +27,7 @@ public:
 
 private:
     SimpleOscAudioProcessor& processor;
+    juce::Image carvedBackground;
     juce::Image backgroundImage;
     juce::Rectangle<int> uiArea;
     juce::Rectangle<int> carvedArea;
